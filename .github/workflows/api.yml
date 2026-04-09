@@ -1,0 +1,125 @@
+name: ARCHIBALD API CI
+
+on:
+  push:
+    branches: [main, develop]
+    paths:
+      - "apps/api/**"
+      - "apps/orchestrator/**"
+      - "pnpm-workspace.yaml"
+      - "turbo.json"
+      - ".github/workflows/api.yml"
+  pull_request:
+    branches: [main]
+    paths:
+      - "apps/api/**"
+      - "apps/orchestrator/**"
+
+jobs:
+  test-api:
+    name: Test ARCHIBALD API
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: /home/runner/work/${{ github.repository }}
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup pnpm
+        uses: pnpm/action-setup@v4
+        with:
+          version: 10.30.3
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+          cache: "pnpm"
+          cache-dependency-path: archibald/pnpm-lock.yaml
+
+      - name: Install dependencies
+        working-directory: archibald
+        run: pnpm install --frozen-lockfile
+
+      - name: Type-check API
+        working-directory: archibald/apps/api
+        run: pnpm exec tsc --noEmit
+
+      - name: Type-check Orchestrator
+        working-directory: archibald/apps/orchestrator
+        run: pnpm exec tsc --noEmit
+
+      - name: Run API tests
+        working-directory: archibald/apps/api
+        env:
+          NODE_ENV: test
+          VITEST: true
+        run: pnpm test
+
+      - name: Run Orchestrator tests
+        working-directory: archibald/apps/orchestrator
+        env:
+          NODE_ENV: test
+          VITEST: true
+        run: pnpm test
+
+  test-dashboard:
+    name: Test ARCHIBALD Dashboard
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup pnpm
+        uses: pnpm/action-setup@v4
+        with:
+          version: 10.30.3
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+          cache: "pnpm"
+          cache-dependency-path: archibald/pnpm-lock.yaml
+
+      - name: Install dependencies
+        working-directory: archibald
+        run: pnpm install --frozen-lockfile
+
+      - name: Run Dashboard tests
+        working-directory: archibald/apps/dashboard
+        env:
+          NODE_ENV: test
+        run: pnpm test
+
+  build:
+    name: Build all packages
+    runs-on: ubuntu-latest
+    needs: [test-api, test-dashboard]
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup pnpm
+        uses: pnpm/action-setup@v4
+        with:
+          version: 10.30.3
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+          cache: "pnpm"
+          cache-dependency-path: archibald/pnpm-lock.yaml
+
+      - name: Install dependencies
+        working-directory: archibald
+        run: pnpm install --frozen-lockfile
+
+      - name: Build (turbo)
+        working-directory: archibald
+        run: pnpm build
