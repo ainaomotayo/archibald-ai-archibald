@@ -9,12 +9,16 @@ function cn(...inputs: (string | undefined | false)[]) {
   return twMerge(clsx(inputs));
 }
 
+// Pending decisions count — in production this would be fetched from the API.
+const DECISIONS_PENDING_COUNT = 4;
+
 const navItems = [
-  { href: "/", label: "Overview", icon: "O", description: "Ecosystem health" },
-  { href: "/products", label: "Products", icon: "P", description: "Managed products" },
-  { href: "/lifecycle", label: "Lifecycle", icon: "L", description: "Active runs" },
-  { href: "/insights", label: "Insights", icon: "I", description: "Self-evolution" },
-  { href: "/team", label: "Team", icon: "T", description: "Settings & access" },
+  { href: "/", label: "Overview", icon: "O", description: "Ecosystem health", badge: null },
+  { href: "/products", label: "Products", icon: "P", description: "Managed products", badge: null },
+  { href: "/lifecycle", label: "Lifecycle", icon: "L", description: "Active runs", badge: null },
+  { href: "/decisions", label: "Decisions", icon: "D", description: "CTO inbox", badge: DECISIONS_PENDING_COUNT },
+  { href: "/insights", label: "Insights", icon: "I", description: "Self-evolution", badge: null },
+  { href: "/team", label: "Team", icon: "T", description: "Settings & access", badge: null },
 ];
 
 export function Sidebar() {
@@ -69,7 +73,20 @@ export function Sidebar() {
               >
                 {item.icon}
               </span>
-              <span>{item.label}</span>
+              <span className="flex-1">{item.label}</span>
+              {item.badge !== null && item.badge > 0 && (
+                <span
+                  data-testid={`nav-badge-${item.href.replace("/", "")}`}
+                  className={cn(
+                    "rounded-full px-1.5 py-0.5 text-[10px] font-semibold",
+                    isActive
+                      ? "bg-white/20 text-white"
+                      : "bg-amber-400/20 text-amber-400",
+                  )}
+                >
+                  {item.badge}
+                </span>
+              )}
             </Link>
           );
         })}
