@@ -1,0 +1,147 @@
+
+> @archibald/lifecycle-dashboard@0.1.0 test /home/ainaomotayo/archibald-ai/archibald/apps/dashboard
+> vitest run
+
+
+ RUN  v3.2.4 /home/ainaomotayo/archibald-ai/archibald/apps/dashboard
+
+ ✓ __tests__/lifecycle-timeline.test.tsx (8 tests) 524ms
+ ✓ __tests__/ecosystem-health.test.tsx (7 tests) 1112ms
+   ✓ EcosystemOverviewPage > renders active lifecycle runs table  389ms
+ ✓ __tests__/insights.test.tsx (12 tests) 1740ms
+   ✓ InsightsPage > renders the page title and description  516ms
+   ✓ InsightsPage > renders ARCHIBALD confidence score  335ms
+ ❯ __tests__/agent-timeline.test.tsx (55 tests | 4 failed) 3279ms
+   ✓ AgentDAG > renders the correct number of nodes for a 10-agent run 284ms
+   ✓ AgentDAG > completed agent node has green colour class 43ms
+   ✓ AgentDAG > running agent node has blue colour class and animate-pulse 43ms
+   ✓ AgentDAG > failed agent node has red colour class 47ms
+   ✓ AgentDAG > AWAITING_APPROVAL agent node has amber colour class 70ms
+   ✓ AgentDAG > SKIPPED agent node has dotted border class 100ms
+   ✓ AgentDAG > clicking a node calls onSelectAgent with the agentId 76ms
+   ✓ AgentDAG > selected node has ring styling 33ms
+   ✓ AgentDAG > renders N-1 arrows for N agents 109ms
+   ✓ AgentDetailPanel > shows agent name in the panel 39ms
+   ✓ AgentDetailPanel > shows duration when agent has completed with durationMs 110ms
+   ✓ AgentDetailPanel > shows Approve and Reject buttons when status is AWAITING_APPROVAL 18ms
+   ✓ AgentDetailPanel > does NOT show Approve/Reject buttons when status is COMPLETED 12ms
+   ✓ AgentDetailPanel > shows pending decision description text 24ms
+   ✓ AgentDetailPanel > shows LLM stats when provided 27ms
+   ✓ AgentDetailPanel > shows events published list when present 15ms
+   ✓ AgentDetailPanel > calls onClose when close button is clicked 8ms
+   ✓ AgentDetailPanel > shows input JSON viewer when input is present 9ms
+   ✓ AgentDetailPanel > shows error message when status is FAILED 11ms
+   ✓ AgentGantt > renders one row per agent 105ms
+   ✓ AgentGantt > renders a bar for each agent 65ms
+   × AgentGantt > completed agent bar uses green background color 71ms
+     → expected 'left: 0px; width: 600px; background-c…' to contain '#10b981'
+   × AgentGantt > running agent bar uses blue background color 34ms
+     → expected 'left: 0px; width: 600px; background-c…' to contain '#3b82f6'
+   × AgentGantt > failed agent bar uses red background color 17ms
+     → expected 'left: 0px; width: 600px; background-c…' to contain '#ef4444'
+   × AgentGantt > AWAITING_APPROVAL bar uses amber background color 42ms
+     → expected 'left: 0px; width: 4px; background-col…' to contain '#f59e0b'
+   ✓ AgentGantt > shows formatted duration for completed agents 16ms
+   ✓ RunSummaryHeader > shows product name 18ms
+   ✓ RunSummaryHeader > shows correct gates passed count 16ms
+   ✓ RunSummaryHeader > shows total duration for COMPLETED run 13ms
+   ✓ RunSummaryHeader > shows 'In progress' prefix for IN_PROGRESS run 9ms
+   ✓ RunSummaryHeader > shows pending decision badge when count > 0 15ms
+   ✓ RunSummaryHeader > does NOT show pending decision badge when count is 0 12ms
+   ✓ RunSummaryHeader > shows IN_PROGRESS blue chip 9ms
+   ✓ RunSummaryHeader > shows COMPLETED green chip 16ms
+   ✓ RunSummaryHeader > shows FAILED red chip 17ms
+   ✓ RunSummaryHeader > shows AWAITING_APPROVAL amber chip 13ms
+   ✓ AgentTimelinePage > renders the full page without crashing 64ms
+   ✓ AgentTimelinePage > renders the run summary header 64ms
+   ✓ AgentTimelinePage > renders the DAG component 83ms
+   ✓ AgentTimelinePage > renders the Gantt component 80ms
+   ✓ AgentTimelinePage > does NOT show detail panel before any node is clicked 96ms
+   ✓ AgentTimelinePage > clicking a DAG node reveals the AgentDetailPanel with correct agent name 145ms
+   ✓ AgentTimelinePage > clicking the same node twice closes the detail panel 229ms
+   ✓ AgentTimelinePage > clicking a different node switches the detail panel to that agent 256ms
+   ✓ AgentTimelinePage > closing the detail panel via the close button hides it 261ms
+   ✓ AgentTimelinePage > mock data has 10 agents in the DAG 109ms
+   ✓ AgentTimelinePage > mock data has one AWAITING_APPROVAL agent (DeployAgent) with pending decision buttons 267ms
+   ✓ mockTimelineData > returns a LifecycleRunSummary with at least 8 agents 5ms
+   ✓ mockTimelineData > has at least one COMPLETED agent 4ms
+   ✓ mockTimelineData > has exactly one RUNNING agent 3ms
+   ✓ mockTimelineData > has exactly one AWAITING_APPROVAL agent with a pendingDecision 4ms
+   ✓ mockTimelineData > has at least one PENDING agent 3ms
+   ✓ mockTimelineData > has at least one SKIPPED agent 0ms
+   ✓ mockTimelineData > run startedAt is within the last 10 minutes 1ms
+   ✓ mockTimelineData > completed agents have realistic timestamps (30–90s durations) 10ms
+
+⎯⎯⎯⎯⎯⎯⎯ Failed Tests 4 ⎯⎯⎯⎯⎯⎯⎯
+
+ FAIL  __tests__/agent-timeline.test.tsx > AgentGantt > completed agent bar uses green background color
+AssertionError: expected 'left: 0px; width: 600px; background-c…' to contain '#10b981'
+
+Expected: [32m"#10b981"[39m
+Received: [31m"left: 0px; width: 600px; background-color: rgb(16, 185, 129); opacity: 0.85;"[39m
+
+ ❯ __tests__/agent-timeline.test.tsx:356:39
+    354|     const bar = screen.getByTestId("gantt-bar-g1");
+    355|     // Inline style uses the green hex
+    356|     expect(bar.getAttribute("style")).toContain("#10b981");
+       |                                       ^
+    357|   });
+    358| 
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[1/4]⎯
+
+ FAIL  __tests__/agent-timeline.test.tsx > AgentGantt > running agent bar uses blue background color
+AssertionError: expected 'left: 0px; width: 600px; background-c…' to contain '#3b82f6'
+
+Expected: [32m"#3b82f6"[39m
+Received: [31m"left: 0px; width: 600px; background-color: rgb(59, 130, 246); opacity: 0.85;"[39m
+
+ ❯ __tests__/agent-timeline.test.tsx:379:39
+    377| 
+    378|     const bar = screen.getByTestId("gantt-bar-g2");
+    379|     expect(bar.getAttribute("style")).toContain("#3b82f6");
+       |                                       ^
+    380|   });
+    381| 
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[2/4]⎯
+
+ FAIL  __tests__/agent-timeline.test.tsx > AgentGantt > failed agent bar uses red background color
+AssertionError: expected 'left: 0px; width: 600px; background-c…' to contain '#ef4444'
+
+Expected: [32m"[7m#[27mef[7m4444[27m"[39m
+Received: [31m"[7ml[27mef[7mt: 0px; width: 600px; background-color: rgb(239, 68, 68); opacity: 0.85;[27m"[39m
+
+ ❯ __tests__/agent-timeline.test.tsx:404:39
+    402| 
+    403|     const bar = screen.getByTestId("gantt-bar-g3");
+    404|     expect(bar.getAttribute("style")).toContain("#ef4444");
+       |                                       ^
+    405|   });
+    406| 
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[3/4]⎯
+
+ FAIL  __tests__/agent-timeline.test.tsx > AgentGantt > AWAITING_APPROVAL bar uses amber background color
+AssertionError: expected 'left: 0px; width: 4px; background-col…' to contain '#f59e0b'
+
+Expected: [32m"#f59e0b"[39m
+Received: [31m"left: 0px; width: 4px; background-color: rgb(245, 158, 11); opacity: 0.3;"[39m
+
+ ❯ __tests__/agent-timeline.test.tsx:426:39
+    424| 
+    425|     const bar = screen.getByTestId("gantt-bar-g4");
+    426|     expect(bar.getAttribute("style")).toContain("#f59e0b");
+       |                                       ^
+    427|   });
+    428| 
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[4/4]⎯
+
+
+ Test Files  1 failed | 3 passed (4)
+      Tests  4 failed | 78 passed (82)
+   Start at  13:17:18
+   Duration  7.46s (transform 783ms, setup 933ms, collect 2.00s, tests 6.66s, environment 5.69s, prepare 1.27s)
+
+ ELIFECYCLE  Test failed. See above for more details.

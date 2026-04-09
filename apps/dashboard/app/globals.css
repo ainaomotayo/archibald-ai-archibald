@@ -1,0 +1,16 @@
+@import "tailwindcss";
+
+:root {
+  --archibald-primary: #7c3aed;
+  --archibald-primary-hover: #6d28d9;
+  --archibald-bg: #0f172a;
+  --archibald-surface: #1e293b;
+  --archibald-surface-raised: #263044;
+  --archibald-border: #334155;
+  --archibald-text: #f8fafc;
+  --archibald-text-muted: #94a3b8;
+  --archibald-success: #10b981;
+  --archibald-warning: #f59e0b;
+  --archibald-danger: #ef4444;
+  --archibald-info: #3b82f6;
+}

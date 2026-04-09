@@ -1,0 +1,18 @@
+{
+  "name": "archibald",
+  "version": "0.1.0",
+  "private": true,
+  "scripts": {
+    "build": "turbo build",
+    "test": "turbo test",
+    "dev": "turbo dev"
+  },
+  "devDependencies": {
+    "turbo": "^2.4",
+    "typescript": "^5.7"
+  },
+  "packageManager": "pnpm@10.30.3",
+  "pnpm": {
+    "onlyBuiltDependencies": ["@archibald/db", "@prisma/client", "@prisma/engines", "prisma", "esbuild"]
+  }
+}

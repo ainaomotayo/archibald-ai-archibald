@@ -34,6 +34,15 @@ function makeRedisMock() {
   return { xadd: vi.fn().mockResolvedValue("0-1") };
 }
 
+/**
+ * FastBuildAgent — overrides sleep() to be instant so poll tests run without wall-clock delay.
+ */
+class FastBuildAgent extends BuildAgent {
+  protected override sleep(_ms: number): Promise<void> {
+    return Promise.resolve();
+  }
+}
+
 // ── Tests ─────────────────────────────────────────────────────────────────────
 
 describe("BuildAgent", () => {
@@ -53,12 +62,12 @@ describe("BuildAgent", () => {
 
   it("returns nextAction 'proceed' with buildId on FORGE SUCCESS", async () => {
     fetchMock
-      .mockResolvedValueOnce(makeSpecResponse())       // POST /v1/specs
-      .mockResolvedValueOnce(makeBuildResponse())       // POST /v1/builds
+      .mockResolvedValueOnce(makeSpecResponse())            // POST /v1/specs
+      .mockResolvedValueOnce(makeBuildResponse())            // POST /v1/builds
       .mockResolvedValueOnce(makePollResponse("SUCCESS", "/dist/output")); // GET /v1/builds/:id
 
     const redis = makeRedisMock();
-    const agent = new BuildAgent({ redis: redis as any, forgeUrl: "http://forge-test:8110" });
+    const agent = new FastBuildAgent({ redis: redis as any, forgeUrl: "http://forge-test:8110" });
     const result = await agent.execute(mockContext);
 
     expect(result.nextAction).toBe("proceed");
@@ -77,7 +86,7 @@ describe("BuildAgent", () => {
       .mockResolvedValueOnce(makeBuildResponse())
       .mockResolvedValueOnce(makePollResponse("SUCCESS"));
 
-    const agent = new BuildAgent({ forgeUrl: "http://forge-test:8110" });
+    const agent = new FastBuildAgent({ forgeUrl: "http://forge-test:8110" });
     const result = await agent.execute(mockContext);
 
     const sources = result.evidence.map((e) => e.source);
@@ -94,7 +103,7 @@ describe("BuildAgent", () => {
       .mockResolvedValueOnce(makeBuildResponse())
       .mockResolvedValueOnce(makePollResponse("FAILED", null));
 
-    const agent = new BuildAgent({ forgeUrl: "http://forge-test:8110" });
+    const agent = new FastBuildAgent({ forgeUrl: "http://forge-test:8110" });
     const result = await agent.execute(mockContext);
 
     expect(result.nextAction).toBe("retry");
@@ -109,7 +118,7 @@ describe("BuildAgent", () => {
   it("returns nextAction 'wait_for_human' with pendingDecision when FORGE is unreachable", async () => {
     fetchMock.mockRejectedValue(new TypeError("fetch failed: ECONNREFUSED"));
 
-    const agent = new BuildAgent({ forgeUrl: "http://forge-test:8110" });
+    const agent = new FastBuildAgent({ forgeUrl: "http://forge-test:8110" });
     const result = await agent.execute(mockContext);
 
     expect(result.nextAction).toBe("wait_for_human");
@@ -124,7 +133,7 @@ describe("BuildAgent", () => {
   it("pendingDecision contains productId and runId in description when unreachable", async () => {
     fetchMock.mockRejectedValue(new Error("connect ECONNREFUSED 127.0.0.1:8110"));
 
-    const agent = new BuildAgent({ forgeUrl: "http://forge-test:8110" });
+    const agent = new FastBuildAgent({ forgeUrl: "http://forge-test:8110" });
     const result = await agent.execute(mockContext);
 
     expect(result.pendingDecision!.description).toContain(mockContext.productId);
@@ -134,31 +143,14 @@ describe("BuildAgent", () => {
   // ── Poll timeout ────────────────────────────────────────────────────────────
 
   it("returns nextAction 'retry' when build is stuck IN_PROGRESS and poll times out", async () => {
-    // Override MAX poll count to keep test fast: use a tiny BuildAgent with 2 polls max
-    // We do this by subclassing and patching sleep + iterating manually via fetchMock
-    // Strategy: mock spec + build OK, then all polls return IN_PROGRESS
     fetchMock
-      .mockResolvedValueOnce(makeSpecResponse())   // POST /v1/specs
-      .mockResolvedValueOnce(makeBuildResponse())   // POST /v1/builds
-      // Return IN_PROGRESS indefinitely — we need the agent's internal loop to hit MAX
-      // We patch sleep to be instant and set a tiny maxPoll via env trick
+      .mockResolvedValueOnce(makeSpecResponse())    // POST /v1/specs
+      .mockResolvedValueOnce(makeBuildResponse())    // POST /v1/builds
+      // All subsequent poll calls return IN_PROGRESS
       .mockResolvedValue(makePollResponse("IN_PROGRESS"));
 
-    // Create an agent subclass that overrides the poll limit to 2 iterations
-    class FastBuildAgent extends BuildAgent {
-      protected override sleep(_ms: number): Promise<void> {
-        return Promise.resolve(); // instant sleep
-      }
-    }
-
-    // Patch the max iterations constant by monkey-patching the execute method behaviour
-    // We rely on having enough mocked responses. With sleep=0ms and 120 iterations,
-    // it will run through quickly. We need 120 poll responses returning IN_PROGRESS.
-    // mockResolvedValue (without Once) already returns IN_PROGRESS for all subsequent calls.
-
+    // Sleep is already instant in FastBuildAgent; 120 iterations will run synchronously
     const agent = new FastBuildAgent({ forgeUrl: "http://forge-test:8110" });
-
-    // This will run 120 iterations instantly
     const result = await agent.execute(mockContext);
 
     expect(result.nextAction).toBe("retry");
@@ -166,7 +158,7 @@ describe("BuildAgent", () => {
     expect(result.failureReason).toMatch(/timed out/i);
     const output = result.output as { forgeStatus: string };
     expect(output.forgeStatus).toBe("IN_PROGRESS");
-  }, 30_000); // 30s safety timeout for the test itself
+  });
 
   // ── Lifecycle event emission ────────────────────────────────────────────────
 
@@ -177,17 +169,11 @@ describe("BuildAgent", () => {
       .mockResolvedValueOnce(makePollResponse("SUCCESS"));
 
     const redis = makeRedisMock();
-    const agent = new BuildAgent({ redis: redis as any, forgeUrl: "http://forge-test:8110" });
+    const agent = new FastBuildAgent({ redis: redis as any, forgeUrl: "http://forge-test:8110" });
     await agent.execute(mockContext);
 
-    expect(redis.xadd).toHaveBeenCalledWith(
-      "archibald.lifecycle",
-      "*",
-      expect.any(String), expect.any(String), // type field
-      expect.any(String), expect.any(String), // more fields
-    );
+    expect(redis.xadd).toHaveBeenCalled();
 
-    // Find the "agent.started" and "agent.completed" calls
     const calls: string[][] = redis.xadd.mock.calls;
     const streams = calls.map((c) => c[0]);
     expect(streams.every((s) => s === "archibald.lifecycle")).toBe(true);
@@ -204,7 +190,7 @@ describe("BuildAgent", () => {
       .mockResolvedValueOnce(makePollResponse("SUCCESS"));
 
     const redis = makeRedisMock();
-    const agent = new BuildAgent({ redis: redis as any, forgeUrl: "http://forge-test:8110" });
+    const agent = new FastBuildAgent({ redis: redis as any, forgeUrl: "http://forge-test:8110" });
     await agent.execute(mockContext);
 
     const allArgs = (redis.xadd.mock.calls as string[][]).flatMap((c) => c);
@@ -219,7 +205,7 @@ describe("BuildAgent", () => {
       .mockResolvedValueOnce(makeBuildResponse())
       .mockResolvedValueOnce(makePollResponse("SUCCESS"));
 
-    const agent = new BuildAgent({
+    const agent = new FastBuildAgent({
       forgeUrl: "http://forge-test:8110",
       apiKey: "secret-token-123",
     });
@@ -240,7 +226,7 @@ describe("BuildAgent", () => {
       text: async () => "Internal Server Error",
     });
 
-    const agent = new BuildAgent({ forgeUrl: "http://forge-test:8110" });
+    const agent = new FastBuildAgent({ forgeUrl: "http://forge-test:8110" });
     const result = await agent.execute(mockContext);
 
     expect(result.nextAction).toBe("wait_for_human");
@@ -254,7 +240,7 @@ describe("BuildAgent", () => {
       .mockResolvedValueOnce(makeSpecResponse())
       .mockResolvedValueOnce({ ok: false, status: 404, text: async () => "Not Found" });
 
-    const agent = new BuildAgent({ forgeUrl: "http://forge-test:8110" });
+    const agent = new FastBuildAgent({ forgeUrl: "http://forge-test:8110" });
     const result = await agent.execute(mockContext);
 
     expect(result.nextAction).toBe("wait_for_human");

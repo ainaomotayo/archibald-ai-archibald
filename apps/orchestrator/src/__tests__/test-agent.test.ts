@@ -202,19 +202,19 @@ describe("TestAgent", () => {
   // ── Polling for pending test results ───────────────────────────────────────
 
   it("polls until test results appear and proceeds on PASS", async () => {
-    // First call: build still in PENDING test status → triggers poll loop
-    // Second call (poll): still PENDING
-    // Third call (poll): PASS
+    // First call: build still running (IN_PROGRESS, testStatus PENDING) → not terminal → enter poll loop
+    // Second poll: still IN_PROGRESS with testStatus PENDING
+    // Third poll: SUCCESS + testStatus PASS → evaluate and proceed
     fetchMock
       .mockResolvedValueOnce({
         ok: true,
         status: 200,
-        json: async () => ({ id: BUILD_ID, status: "SUCCESS", testStatus: "PENDING", coverageEstimate: 0 }),
+        json: async () => ({ id: BUILD_ID, status: "IN_PROGRESS", testStatus: "PENDING", coverageEstimate: 0 }),
       })
       .mockResolvedValueOnce({
         ok: true,
         status: 200,
-        json: async () => ({ id: BUILD_ID, status: "SUCCESS", testStatus: "PENDING", coverageEstimate: 0 }),
+        json: async () => ({ id: BUILD_ID, status: "IN_PROGRESS", testStatus: "PENDING", coverageEstimate: 0 }),
       })
       .mockResolvedValueOnce({
         ok: true,
@@ -232,6 +232,7 @@ describe("TestAgent", () => {
     const result = await agent.execute(mockContext);
 
     expect(result.nextAction).toBe("proceed");
+    // Initial fetch + 2 polls = 3 total calls
     expect(fetchMock).toHaveBeenCalledTimes(3);
   });
 
